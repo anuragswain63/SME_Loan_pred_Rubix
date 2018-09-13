@@ -1,0 +1,52 @@
+---
+title: "SME Loan Documentation Phase2"
+author: "Anurag Swain"
+date: "7 August 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Project Stages 
+
+There are 2phases of this project 
+
+### Phase 1
+<br />1.Data Gathering
+<br />1.1.Files obtained from ProwessIQ
+<br />
+<br />2.Data Merging and Wrangling
+<br />2.1.Creating Master dataset
+
+
+### Phase 2
+<br />3.Creating a Dataset where default companie to non-default are propotionate
+<br />4.Data Cleaning and imputation
+<br />5.Outlier treatment and Capping
+<br />6.Data Normalisation
+<br />7.Data modelling using Machine Learning
+
+
+
+
+
+
+## Introduction 
+
+In Phase1 ,we created a masterdata set with all the core attributes. Now we move forward to phase2.
+
+
+
+##3.Creating a Dataset where default companie to non-default are propotionate
+
+
+##4.Data Cleaning and imputation
+
+##5.Outlier treatment and Capping
+
+##6.Data Normalisation
+
+##7.Data modelling using Machine Learning
+

@@ -1,0 +1,362 @@
+---
+title: "SME Loan Documentation Phase2"
+author: "Anurag Swain"
+date: "7 August 2018"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Project Stages 
+
+
+
+### Phase 2
+<br />1.Dataset used
+<br />1.1.Using Dataset which has companies with all the important core attributes present
+<br />2.Data Wrangling
+<br />2.1.Wrangling the dataset to obtain 
+<br />3.Creating a Dataset where default companies to non-default are propotionate
+<br />4.Data Cleaning and imputation
+<br />5.Outlier treatment and Capping
+<br />6.Data Normalisation
+<br />7.Data modelling using Machine Learning
+
+
+
+
+
+
+## Introduction 
+
+Here we will be using the ScoringDataset which contains companies which have all the important core attributes present.
+The list of companies was obtained from Phase1.The ScoringDataset again contains data which has attributes recurring, with the year appended along with the column name.So the data need to be reformatted again just like in phase1 
+
+
+##1.Dataset used
+
+The data is read from the ScoringDataset.csv into dataframe ScoringDataset
+The attributes are recurring with the year appended 
+
+#### Need to format data 
+
+##### As we can see the attributes are recurring with the year appended to it, the data needs to be formatted with the year occuring in  a seperate column
+```{r }
+
+colnames(ScoringDataset[,1:40])
+
+
+```
+
+##2.Data Wrangling
+
+The data from ScoringDataset is then extracted into seperate datasets where the year of the finacial data is dispalyed in a column and stored in a list of dataframes (MajorAttri,CostofGoodsSoldlist,interestexp_otherattri,salesnattri,Ratingsofcompany - all these list have data from 2009-2018 stored in the list with index1-2009 and index10-2018).
+
+</br>1.Firmographics - Details about the firm
+</br>2.MajorAttri_listmerged - Has Balance sheet data (2009-2018):Total liabilities,Total capital...
+</br>3.salesnattri_listmerged -Has Sales data (2009-2018)
+</br>4.interestexp_otherattri_listmeged - Has Expenses data (2009-2018)
+</br>5.CostofGoodsSoldlist_merged - Has cost of goods sold data (2009-2018)
+</br>6.Ratingsofcompany_listmerged - Has Ratings of the company (2009-2018)
+
+
+###### There is a seperate list for each of the following Firmographics,MajorAttri_listmerged,salesnattri_listmerged,interestexp_otherattri_listmeged,CostofGoodsSoldlist_merged,Ratingsofcompany_listmerged , below are the attributes present in each of these dataframes
+```{r }
+
+colnames(Firmographics)
+colnames(MajorAttri_listmerged)
+colnames(interestexp_otherattri_listmeged)
+colnames(salesnattri_listmerged)
+```
+
+###### The index correspond to the years , 1 - 2009 ,2 - 2010 .... 10 - 2018  
+```{r}
+summary(CostofGoodsSoldlist[[1]])
+summary(CostofGoodsSoldlist[[2]])
+colnames(CostofGoodsSoldlist_merged)
+
+```
+
+
+###### All these seperate data sets were then merged to create a Merged_Masterdata, which has all the attributes present
+
+```{r }
+dim(Merged_Masterdata)
+colnames(Merged_Masterdata)
+
+```
+
+
+##3.Creating a Dataset where default companies to non-default are propotionate
+
+We now have the same company occuring multiple time corresponding to the year of its financial data.So we need to pick a particular year for a particular company.We will use the code from SubsetScoringDataset.R to obtain the Final_dataset(For companies that has defaulted, ie where the default flag is set to 1, we select the financials of the previous year, and for non-default companies the records corresponding to its latest financial year was chosen )
+
+
+
+#### Before imputing
+
+###### Missing values 
+```{r }
+summary(Final_dataset$Total.liabilities)
+summary(Final_dataset$Total.expenses)
+
+```
+
+
+##4.Data Cleaning and imputation
+
+In script Clean_Final_dataset.R , we will impute the missing attributes with mean-imputation based on Industry.group(more specific grouping) and then on basis of Entity.type (generalised grouping). And we use the script NewVariables.R to create the derived attributes. 
+
+#### After imputing
+```{r }
+summary(Final_dataset_meanimpute$Total.liabilities)
+summary(Final_dataset_meanimpute$Total.expenses)
+
+```
+
+
+
+#### Derived Attributes added
+
+Major derived attributes were obtained from ratio of core attributes 
+```{r }
+colnames(Final_dataset_meanimpute)
+
+```
+
+For Categorical variables flags were created as follows 
+</BR>NSE_Flag is 1 if NSE.symbol is 1 otherwise 0
+</BR>BSE_Flag is 1 if BSE.scrip.code is 1 otherwise 0
+</BR>EntityTypePublicFlag is 1 if Entity.type is public and 0 otherwise
+</BR>EntityTypePrivateFlag is 1 if Entity.type is private and 0 otherwise
+</BR>Ownershipgrp_PrivateForeign is 1 if Ownership.group is PrivateForeign and 0 otherwise
+</BR>Ownershipgrp_PrivateIndian 1 if Ownership.group is PrivateIndian and 0 otherwise
+
+```{r}
+summary(Final_dataset_Norm_5to95$EntityTypePublicFlag)
+summary(Final_dataset_Norm_5to95$EntityTypePrivateFlag)
+summary(Final_dataset_Norm_5to95$Ownershipgrp_PrivateForeign)
+summary(Final_dataset_Norm_5to95$Ownershipgrp_PrivateIndian)
+
+
+
+```
+
+##5.Outlier treatment and Capping
+
+In script Outlierdetection.R ,we have capped values below 5 quantile (5%) and above 95 quantile (95%). 
+
+#### Before capping Current Ratio
+```{r }
+library(ggplot2)
+library(scales)
+
+summary(Final_dataset_bkup$CurrentRatio)
+ggplot(Final_dataset_bkup,aes(CurrentRatio))+geom_histogram(bins = 30)+scale_x_continuous(limits = c(-5,50))
+
+
+```
+
+
+#### After capping Current Ratio
+```{r }
+library(ggplot2)
+library(scales)
+
+summary(Final_dataset_capped_5to95perc$CurrentRatio)
+ggplot(Final_dataset_capped_5to95perc,aes(CurrentRatio))+geom_histogram(bins=30)
+
+
+```
+
+### Before capping Inventory Days
+```{r }
+library(ggplot2)
+library(scales)
+
+summary(Final_dataset_bkup$InventoryDays)
+ggplot(Final_dataset_bkup,aes(InventoryDays))+geom_histogram(bins = 30)+scale_x_continuous(limits = c(-10,3000))
+
+
+```
+
+
+### After capping Inventory Days
+```{r }
+library(ggplot2)
+library(scales)
+
+summary(Final_dataset_capped_5to95perc$InventoryDays)
+ggplot(Final_dataset_capped_5to95perc,aes(InventoryDays))+geom_histogram(bins=30)
+
+
+```
+
+### Before capping Payable Days
+```{r }
+library(ggplot2)
+library(scales)
+
+summary(Final_dataset_bkup$PayableDays)
+ggplot(Final_dataset_bkup,aes(PayableDays))+geom_histogram(bins = 30)+scale_x_continuous(limits = c(-10,3000))
+
+
+
+```
+
+### After capping Payable Days
+```{r }
+library(ggplot2)
+library(scales)
+
+summary(Final_dataset_capped_5to95perc$PayableDays)
+ggplot(Final_dataset_capped_5to95perc,aes(PayableDays))+geom_histogram(bins = 30)
+
+
+
+```
+
+Before and after capping summary for derived attributes Final_dataset_bkup has before capping data and Final_dataset_capped_5to95perc has after capping data
+```{r}
+
+
+summary(Final_dataset_bkup$InventoryDays)
+summary(Final_dataset_capped_5to95perc$InventoryDays)
+
+summary(Final_dataset_bkup$ReceivableDays)
+summary(Final_dataset_capped_5to95perc$ReceivableDays)
+
+summary(Final_dataset_bkup$PayableDays)
+summary(Final_dataset_capped_5to95perc$PayableDays)
+
+
+
+```
+
+
+For Age of the comapny, we have imputed first on basis of industry.group and then on basis of entity.type
+
+Comapnies with missing AgeofCompany have been imputed with the following values
+```{r}
+head(MissingAge_df,10)
+head(MissingAge_dfbyentity,10)
+
+```
+
+
+##6.Data Normalisation
+Here we used min-max normalisation to normalise the data to between 0 and 1
+
+Sharing normalisations for a few attributes
+
+#### Before Normalising payable days
+```{r }
+library(ggplot2)
+library(scales)
+
+summary(Final_dataset_capped_5to95perc$PayableDays)
+ggplot(Final_dataset_capped_5to95perc,aes(PayableDays))+geom_histogram(bins = 30)
+
+
+
+```
+
+#### After Normalising payable days
+```{r }
+library(ggplot2)
+library(scales)
+
+summary(Final_dataset_Norm_5to95$PayableDays)
+ggplot(Final_dataset_Norm_5to95,aes(PayableDays))+geom_histogram(bins=30)
+
+
+
+```
+
+
+#### Before Normalising interest-ratio coverage
+```{r }
+library(ggplot2)
+library(scales)
+
+summary(Final_dataset_capped_5to95perc$InterestRatioCoverage)
+ggplot(Final_dataset_capped_5to95perc,aes(InterestRatioCoverage))+geom_histogram(bins = 30)
+
+
+
+```
+
+#### After Normalising interest-ratio coverage
+```{r }
+library(ggplot2)
+library(scales)
+
+summary(Final_dataset_Norm_5to95$InterestRatioCoverage)
+ggplot(Final_dataset_Norm_5to95,aes(InterestRatioCoverage))+geom_histogram(bins=30)
+
+
+
+```
+
+
+
+
+##7.Data modelling using Machine Learning
+
+Used logistic,decision tree and random forest models for machine learning.
+For decision tree, couldn't create a tree beyond the root node because of cross-validation error being greater than 100%, due to which it was overfitting.Hence have focussed on the other two models
+
+The attributes that have been used for modelling are as follows
+Default.Flag~CurrentRatio+QuickRatio+InterestRatioCoverage+DebtEquityRatio+DSCR+EBITA+PBT_percentage+InventoryDays+ReceivableDays+PayableDays+ROCE+RONW+FixedAssetsTurnover+AgeofCompany+BSE_Flag+EntityTypePublicFlag+EntityTypePrivateFlag+Ownershipgrp_PrivateForeign+Ownershipgrp_PrivateIndian
+
+### Using logistic regression
+
+```{r}
+
+Model_logistic<-glm(Default.Flag~CurrentRatio+QuickRatio+InterestRatioCoverage+DebtEquityRatio+DSCR+EBITA+PBT_percentage+InventoryDays+ReceivableDays+PayableDays+ROCE+RONW+FixedAssetsTurnover+AgeofCompany+BSE_Flag+EntityTypePublicFlag+EntityTypePrivateFlag+Ownershipgrp_PrivateForeign+Ownershipgrp_PrivateIndian,family=binomial(link='logit'),data = Final_datasetTrain_Norm_5to95)
+
+summary(Model_logistic)
+```
+
+```{r}
+PredictedTrain_logistic<-predict(Model_logistic,Final_datasetTrain_Norm_5to95,type = "response")
+table(actualvalue=Final_datasetTrain_Norm_5to95$Default.Flag,predictedvalue=PredictedTrain_logistic>0.5)
+```
+The training set gives accuracy of about 80%
+
+```{r]}
+PredictedTest_logistic<-predict(Model_logistic,Final_datasetTest_Norm_5to95,type = "response")
+table(actualvalue=Final_datasetTest_Norm_5to95$Default.Flag,predictedvalue=PredictedTest_logistic>0.5)
+```
+The testing set gives accuracy of 79.5%
+
+
+
+### Using Randomforest
+#### For default mtry
+
+```{r}
+print(bestmtry)
+
+```
+
+For mtry=4
+The Training accuracy was 95%
+The testing accuracy was 80%
+
+
+#### On mtry =2
+
+```{r}
+table(actualvalue=Final_datasetTrain_Norm_5to95$Default.Flag,predictedvalue=PredictedTrain_randomforest)
+```
+Training accuracy :82%
+
+```{r}
+table(actualvalue=Final_datasetTest_Norm_5to95$Default.Flag,predictedvalue=PredictedTest_randomforest)
+```
+Testing accuracy : 79.7%
